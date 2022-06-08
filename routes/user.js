@@ -5,10 +5,10 @@ const User = require('../models/User');
 const { body, validationResult } = require('express-validator');
 
 // ROUTE 1: Get User Details using: GET "/api/user/getuser". Login required
-router.get('/fetchspecificeuser', fetchuser, async (req, res) => {
+router.get('/fetchuserdetails', fetchuser, async (req, res) => {
 	try {
 		const user = await User.find({ _id : req.user.id }).select('-isadmin -password');
-		res.json(user)
+		res.status(200).json(user)
 	} 
 	catch (error) {
 		console.error(error.message);

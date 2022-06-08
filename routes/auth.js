@@ -102,13 +102,13 @@ router.post('/login', [
 	});
 
 
-// ROUTE 3: Get loggedin User Details using: POST "/api/auth/getuser". Login required
-router.post('/getuser', fetchuser, async (req, res) => {
+// ROUTE 3: Get loggedin User Details using: GET "/api/auth/getuser". Login required
+router.get('/fetchuserdetails', fetchuser, async (req, res) => {
 
 	try {
 		let userId = req.user.id;
 		const user = await User.findById(userId).select('-password -__v')
-		res.send(user)
+		res.status(200).json(user)
 	} catch (error) {
 		console.error(error.message);
 		res.status(500).send("Internal Server Error");

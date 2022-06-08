@@ -44,16 +44,16 @@ router.get('/getsuppliers', fetchuser, async (req, res) => {
 
 router.post('/addsupplier', fetchuser, async (req, res) => {
 	try {
-		const { title, name, phone } = req.body;
+		const { name, phone } = req.body;
 		// If there are errors, return Bad request and the errors
 		// const errors = validationResult(req);
 		// if (!errors.isEmpty()) {
 		// 	return res.status(400).json({ errors: errors.array() });
 		// }
 		const supplier = new Suppliers({
-			title, name, phone, user: req.user.id
+			name, phone, user: req.user.id
 		})
-		const rep = await Suppliers.findOne({ name });
+		const rep = await Suppliers.findOne({ phone });
 		if (!rep) {
 			const savedsupplier = await supplier.save()
 			res.status(200).json(savedsupplier)
@@ -72,11 +72,10 @@ router.post('/addsupplier', fetchuser, async (req, res) => {
 // ROUTE 3: Update an existing supplier using: PUT "/api/supplier/updatesupplier". Login required
 
 router.put('/updatesupplier/:id', fetchuser, async (req, res) => {
-	const { title, name, phone } = req.body;
+	const { name, phone } = req.body;
 	try {
 		// Create a newsupplier object
 		const newsupplier = {};
-		if (title) { newsupplier.title = title };
 		if (name) { newsupplier.name = name };
 		if (phone) { newsupplier.phone = phone };
 
@@ -87,6 +86,13 @@ router.put('/updatesupplier/:id', fetchuser, async (req, res) => {
 		if (supplier.user.toString() !== req.user.id) {
 			return res.status(401).send("Not Allowed");
 		}
+		const rep = await Suppliers.findOne({ phone });
+		console.log(rep)
+		if (rep) {
+			console.log("no")
+			return res.status(409).json({ "danger": "Supplier with that Phone number  already exist" })
+		}
+		console.log("hi ram ram ram ram ram ram ram")
 		const updatesupplier = await Suppliers.findByIdAndUpdate(req.params.id, { $set: newsupplier }, { new: true })
 		res.status(200).json(updatesupplier);
 	}
@@ -174,8 +180,9 @@ router.post('/addSupplierTransaction/:id', fetchuser, async (req, res) => {
 		}
 
 
-
+		console.log(req.body)
 		const { purchase_singleSupplier, payment_singleSupplier, billDetails, billNo, date } = req.body;
+
 		//////////////////////////////////////////hello
 		try {
 
@@ -239,24 +246,30 @@ router.put('/updateSupplierTransaction/:id', fetchuser, async (req, res) => {
 	try {
 		// Create a newNote object
 		const newSupplierTransaction = {};
-
+		// console.log(req.body)
 		if (purchase_singleSupplier) { newSupplierTransaction.purchase_singleSupplier = purchase_singleSupplier };
 		if (payment_singleSupplier) { newSupplierTransaction.payment_singleSupplier = payment_singleSupplier };
 		if (billdetails) { newSupplierTransaction.billdetails = billdetails };
 		if (billNo) { newSupplierTransaction.billNo = billNo };
 		if (date) { newSupplierTransaction.date = date };
-
+		// console.log("hi")
 		let currSupplierTransaction = await SupplierTransactions.findById(req.params.id);
 		const supltoken = req.header('supplier-token');
+		// console.log("supply token is")
+		// console.log(supltoken)
+		// console.log("here")
 		let currSupplierBalance = await SupplierNetBalance.findOne({ supplier: supltoken });
 
 		if (payment_singleSupplier > 0) {
+			// console.log("mai mai")
+			// console.log(currSupplierBalance)
 			let res = currSupplierBalance.payment;
+			// console.log("lo lo");
 			res -= currSupplierTransaction.payment_singleSupplier;
 			res += payment_singleSupplier;
 			res = parseInt(res);
 			try {
-				await SupplierNetBalance.findOneAndUpdate({ supplier: supltoken }, { $set: { payment : res } }, { new: true });
+				await SupplierNetBalance.findOneAndUpdate({ supplier: supltoken }, { $set: { payment: res } }, { new: true });
 			}
 			catch (err) {
 				console.log(err);
@@ -268,7 +281,7 @@ router.put('/updateSupplierTransaction/:id', fetchuser, async (req, res) => {
 			res += purchase_singleSupplier;
 			res = parseInt(res);
 			try {
-				await SupplierNetBalance.findOneAndUpdate({ supplier: supltoken }, { $set: { purchase : res } }, { new: true });
+				await SupplierNetBalance.findOneAndUpdate({ supplier: supltoken }, { $set: { purchase: res } }, { new: true });
 			}
 			catch (err) {
 				console.log(err);

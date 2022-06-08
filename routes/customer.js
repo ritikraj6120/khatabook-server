@@ -10,7 +10,7 @@ const { body, validationResult } = require('express-validator');
 // ROUTE 1: Get All the Customers using: GET "/api/customer/getcustomers". Login required
 router.get('/getcustomers', fetchuser, async (req, res) => {
 	try {
-		const customers = await Customers.find({ user: req.user.id }).select('-user -date');
+		const customers = await Customers.find({ user: req.user.id }).select('-user -date -__v');
 		res.json(customers)
 	} catch (error) {
 		console.error(error.message);
@@ -21,7 +21,8 @@ router.get('/getcustomers', fetchuser, async (req, res) => {
 // ROUTE 2: Add a new Customer using: GET "/api/customer/addcustomers". Login required
 router.post('/addcustomer', fetchuser, async (req, res) => {
 	try {
-		let { title, name, phone } = req.body;
+		let { name, phone } = req.body;
+		name = name.trim();
 		console.log(phone);
 		// If there are errors, return Bad request and the errors
 		// const errors = validationResult(req);
@@ -29,17 +30,19 @@ router.post('/addcustomer', fetchuser, async (req, res) => {
 		// 	return res.status(400).json({ errors: errors.array() });
 		// }
 		const customer = new Customers({
-			title, name, phone, user: req.user.id
+			name, phone, user: req.user.id
 		})
-		const rep = await Customers.findOne({ name });
+		console.log(name)
+		const rep = await Customers.findOne({ phone });
 		console.log(rep)
 		if (!rep) {
+			console.log("yes")
 			let savedCustomer = await customer.save();
 			// console.log(savedCustomer);
 			res.status(200).json(savedCustomer);
 		}
 		else {
-			res.status(404).json({ "danger": "Customer already exist" })
+			res.status(409).json({ "danger": "Customer already exist" })
 		}
 	} catch (error) {
 		console.error(error.message);
@@ -50,14 +53,13 @@ router.post('/addcustomer', fetchuser, async (req, res) => {
 
 // ROUTE 3: Update an existing customer using: PUT "/api/customer/updatecustomers". Login required
 router.put('/updatecustomer/:id', fetchuser, async (req, res) => {
-	const { title, name, phone } = req.body;
+	const { name, phone } = req.body;
 	try {
 		// Create a newNote object
 		const newCustomer = {};
-		if (title) { newCustomer.title = title };
 		if (name) { newCustomer.name = name };
 		if (phone) { newCustomer.phone = phone };
-		console.log(title, name, phone);
+		console.log(name, phone);
 		// Find the note to be updated and update it
 		let customer = await Customers.findById(req.params.id);
 		if (!customer) { return res.status(404).send("Customer Not Found") }
@@ -65,7 +67,12 @@ router.put('/updatecustomer/:id', fetchuser, async (req, res) => {
 		if (customer.user.toString() !== req.user.id) {
 			return res.status(401).send("Not Allowed");
 		}
-
+		const rep = await Customers.findOne({ phone });
+		console.log(rep)
+		if (rep) {
+			console.log("no")
+			return res.status(409).json({ "danger": "Customer with that Phone number  already exist" })
+		}
 		const updateCustomer = await Customers.findByIdAndUpdate(req.params.id, { $set: newCustomer }, { new: true })
 		res.status(200).json(updateCustomer);
 	}
@@ -110,8 +117,7 @@ router.get('/getSingleCustomerDetail/:id', fetchuser, async (req, res) => {
 			return res.status(401).send("Not Allowed");
 		}
 
-		const getSingleCustomer = customer;
-		res.status(200).json(getSingleCustomer);
+		res.status(200).json(customer);
 
 	}
 	catch (error) {
@@ -125,7 +131,7 @@ router.get('/getSingleCustomerDetail/:id', fetchuser, async (req, res) => {
 router.get('/getCustomerTransactions/:id', fetchuser, async (req, res) => {
 	try {
 		let customer = await Customers.findById(req.params.id);
-		if (!customer) { return res.status(404).send("No Customer Found with this name") }
+		// if (!customer) { return res.status(404).send("No Customer Found with this name") }
 
 		if (customer.user.toString() !== req.user.id) {
 			return res.status(401).send("Not Allowed");
@@ -145,7 +151,7 @@ router.post('/addCustomerTransaction/:id', fetchuser, async (req, res) => {
 	try {
 		let customer = await Customers.findById(req.params.id);
 
-		if (!customer) { return res.status(404).send("Customer Not Found") }
+		// if (!customer) { return res.status(404).send("Customer Not Found") }
 
 		if (customer.user.toString() !== req.user.id) {
 			return res.status(401).send("Not Allowed");
@@ -218,10 +224,10 @@ router.put('/updateCustomerTransaction/:id', fetchuser, async (req, res) => {
 	try {
 		// Create a newNote object
 		const newCustomerTransaction = {};
-
+		console.log(req.body);
 		if (lendamount_singleCustomer) { newCustomerTransaction.lendamount_singleCustomer = lendamount_singleCustomer };
 		if (takeamount_singleCustomer) { newCustomerTransaction.takeamount_singleCustomer = takeamount_singleCustomer };
-		if (billdetails) { newCustomerTransaction.billdetails = billdetails };
+		if (billdetails) { newCustomerTransaction.billDetails = billdetails };
 		if (billNo) { newCustomerTransaction.billNo = billNo };
 		if (date) { newCustomerTransaction.date = date };
 		let currCustomerTransaction = await CustomerTransactions.findById(req.params.id);
@@ -252,6 +258,8 @@ router.put('/updateCustomerTransaction/:id', fetchuser, async (req, res) => {
 		}
 
 		const updateCustomerTransaction = await CustomerTransactions.findByIdAndUpdate(req.params.id, { $set: newCustomerTransaction }, { new: true })
+		console.log("i am updated response");
+		console.log(updateCustomerTransaction);
 		res.status(200).json(updateCustomerTransaction);
 	}
 	catch (error) {

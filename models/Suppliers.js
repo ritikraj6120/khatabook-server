@@ -6,18 +6,14 @@ const SupplierSchema = new Schema({
 		type: Schema.Types.ObjectId,
 		ref: 'user'
 	},
-	title: {
+	name: {
 		type: String,
 		required: true
 	},
-	name: {
-		type: String,
-		required: true,
-		unique:true
-	},
 	phone:{
 		type:String,
-		required:true
+		required:true,
+		unique:true,
 	},
 	date: {
 		type: Date,
